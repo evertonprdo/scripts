@@ -2,14 +2,17 @@ use std::fs;
 
 fn main() {
     let content = fs::read_to_string("sample.csv").unwrap();
-    process_csv(content);
+    process_csv(content, |x| println!("{x}"));
 }
 
 const DOUBLEQUOTE: u8 = 34;
 const LINE_FEED: u8 = 10;
 const COMMA: u8 = 44;
 
-fn process_csv(csv: String) {
+fn process_csv<F>(csv: String, callback: F)
+where
+    F: Fn(String),
+{
     let mut is_between_doublequote = false;
     let mut iter = csv.as_bytes().iter();
 
@@ -21,23 +24,11 @@ fn process_csv(csv: String) {
             is_between_doublequote = !is_between_doublequote;
         }
 
-        if !is_between_doublequote && *c == COMMA {
-            print!("| {} ", csv[j..i].to_string());
+        if !is_between_doublequote && *c == COMMA || LINE_FEED == *c {
+            callback(csv[j..i].to_string());
             j = i + 1;
-        }
-
-        if !is_between_doublequote && *c == LINE_FEED {
-            print!("{} |", csv[j..i].to_string());
-            j = i + 1;
-
-            print!("\n");
         }
 
         i += 1;
     }
-    print!(" |\n");
 }
-
-//     j
-//         v
-// Name,Age,Email,Country
