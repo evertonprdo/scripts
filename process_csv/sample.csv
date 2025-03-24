@@ -1,0 +1,21 @@
+Name,Age,Email,Country
+Alice Johnson,25,alice@example.com,USA
+Bob Smith,30,bob@example.com,UK
+Charlie Brown,22,charlie@example.com,Canada
+David White,35,david@example.com,Australia
+Emma Wilson,28,emma@example.com,Germany
+Franklin Harris,40,franklin@example.com,France
+Grace Lee,27,grace@example.com,Japan
+Henry Walker,33,henry@example.com,Brazil
+Isabella Scott,29,isabella@example.com,Italy
+Jack Robinson,26,jack@example.com,Spain
+Katherine Martinez,31,katherine@example.com,Mexico
+"Leo,""dirty"" Turner",23,leo@example.com,Netherlands
+Mia Phillips,34,mia@example.com,Sweden
+Noah Carter,32,noah@example.com,Norway
+Olivia Adams,28,olivia@example.com,Denmark
+"Patrick Evans""\n",37,patrick@example.com,Ireland
+Quinn Baker,24,quinn@example.com,Switzerland
+Rachel Thomas,29,rachel@example.com,South Africa
+Samuel Lewis,36,samuel@example.com,India
+Tina Foster,30,tina@example.com,New Zealand
