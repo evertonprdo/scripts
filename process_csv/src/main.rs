@@ -1,40 +1,69 @@
-use std::fs;
+use std::{
+    fs::File,
+    io::{BufRead, BufReader},
+};
 
 fn main() {
-    let content = fs::read_to_string("sample.csv").unwrap();
-    process_csv(content, |x| println!("{:?}", x));
+    let path = "sample.csv";
+
+    let process_csv = ProcessCSV::new(path);
+
+    for line in process_csv {
+        println!("{:?}", line);
+    }
 }
 
-const DOUBLEQUOTE: u8 = 34;
-const LINE_FEED: u8 = 10;
-const COMMA: u8 = 44;
+struct ProcessCSV {
+    buffer: BufReader<File>,
+}
+impl ProcessCSV {
+    fn new(path: &str) -> Self {
+        let f = File::open(path).unwrap();
+        ProcessCSV {
+            buffer: BufReader::new(f),
+        }
+    }
+}
+impl Iterator for ProcessCSV {
+    type Item = Vec<String>;
 
-fn process_csv<F>(csv: String, callback: F)
-where
-    F: Fn(Vec<String>),
-{
-    let mut yeld: Vec<String> = Vec::new();
-    let mut is_between_doublequote = false;
-    let mut iter = csv.as_bytes().iter();
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut line: String = String::new();
 
-    let mut i: usize = 0;
-    let mut j: usize = 0;
-
-    while let Some(c) = iter.next() {
-        if *c == DOUBLEQUOTE {
-            is_between_doublequote = !is_between_doublequote;
+        match self.buffer.read_line(&mut line) {
+            Ok(n) => {
+                if n == 0 {
+                    return None;
+                }
+            }
+            Err(_) => panic!(),
         }
 
-        if !is_between_doublequote && *c == COMMA || LINE_FEED == *c {
-            yeld.push(csv[j..i].to_string());
-            j = i + 1;
+        let mut iter = line.as_bytes().iter();
+        let mut cell: Self::Item = Vec::new();
+
+        let mut skip = false;
+        let mut i = 0;
+        let mut j = 0;
+
+        while let Some(b) = iter.next() {
+            if *b == 34 {
+                skip = !skip;
+            }
+
+            if !skip && *b == 44 {
+                cell.push(line[j..i].to_string());
+                j = i + 1;
+            }
+
+            i += 1;
         }
 
-        if !is_between_doublequote && LINE_FEED == *c {
-            callback(yeld.clone());
-            yeld.clear();
+        if let Some(10) = line.as_bytes().iter().next_back() {
+            i -= 1;
         }
 
-        i += 1;
+        cell.push(line[j..i].to_string());
+        Some(cell)
     }
 }
