@@ -26,15 +26,10 @@ impl ProcessCSV {
         }
         Some(line)
     }
-}
-impl Iterator for ProcessCSV {
-    type Item = Vec<String>;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        let line = self.read_line()?;
-
+    fn parse_line(line: &str) -> Vec<String> {
         let mut iter = line.as_bytes().iter();
-        let mut cell: Self::Item = Vec::new();
+        let mut cell: Vec<String> = Vec::new();
 
         let mut skip = false;
         let mut i = 0;
@@ -58,24 +53,36 @@ impl Iterator for ProcessCSV {
         }
 
         cell.push(line[j..i].to_string());
-        Some(cell)
+        cell
+    }
+}
+impl Iterator for ProcessCSV {
+    type Item = Vec<String>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        Some(Self::parse_line(&self.read_line()?))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
-
     use super::*;
 
-    // And the "unit" test make it clear that the implementation is extremely coupled.
     #[test]
     fn process_line() {
-        let path = "test.csv";
-        fs::write(path, "Sample,Header,Example").unwrap();
+        let line = "Sample,Header,Example";
+        assert_eq!(
+            vec!["Sample", "Header", "Example"],
+            ProcessCSV::parse_line(line)
+        );
+    }
 
-        let mut csv = ProcessCSV::from(path);
-
-        assert_eq!(vec!["Sample", "Header", "Example"], csv.next().unwrap());
+    #[test]
+    fn process_line_doublequote() {
+        let line = "Sample,\"He\"\"@add\"\"ader\",Example\n";
+        assert_eq!(
+            vec!["Sample", "\"He\"\"@add\"\"ader\"", "Example"],
+            ProcessCSV::parse_line(line)
+        );
     }
 }
