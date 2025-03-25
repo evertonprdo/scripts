@@ -3,13 +3,15 @@ use std::{
     io::{BufRead, BufReader},
 };
 
-pub struct ProcessCSV {
+pub mod chunk_reader;
+
+pub struct CsvReader {
     buffer: BufReader<File>,
 }
-impl ProcessCSV {
+impl CsvReader {
     pub fn from(path: &str) -> Self {
         let f = File::open(path).unwrap();
-        ProcessCSV {
+        CsvReader {
             buffer: BufReader::new(f),
         }
     }
@@ -56,7 +58,7 @@ impl ProcessCSV {
         cell
     }
 }
-impl Iterator for ProcessCSV {
+impl Iterator for CsvReader {
     type Item = Vec<String>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -73,7 +75,7 @@ mod tests {
         let line = "Sample,Header,Example";
         assert_eq!(
             vec!["Sample", "Header", "Example"],
-            ProcessCSV::parse_line(line)
+            CsvReader::parse_line(line)
         );
     }
 
@@ -82,7 +84,7 @@ mod tests {
         let line = "Sample,\"He\"\"@add\"\"ader\",Example\n";
         assert_eq!(
             vec!["Sample", "\"He\"\"@add\"\"ader\"", "Example"],
-            ProcessCSV::parse_line(line)
+            CsvReader::parse_line(line)
         );
     }
 }

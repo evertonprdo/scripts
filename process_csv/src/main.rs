@@ -1,8 +1,8 @@
-use process_csv::ProcessCSV;
+use process_csv::CsvReader;
 
 fn main() {
     let path = "sample.csv";
-    let process_csv = ProcessCSV::from(path);
+    let process_csv = CsvReader::from(path);
 
     for line in process_csv {
         println!("{:?}", line);
