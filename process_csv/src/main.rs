@@ -1,10 +1,8 @@
-use process_csv::CsvReader;
+use process_csv::chunk_reader::ChunkReader;
 
 fn main() {
     let path = "sample.csv";
-    let process_csv = CsvReader::from(path);
+    let mut process_csv = ChunkReader::from(path, None);
 
-    for line in process_csv {
-        println!("{:?}", line);
-    }
+    process_csv.run(|x| println!("{:?}", x));
 }

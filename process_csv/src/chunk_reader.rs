@@ -1,6 +1,5 @@
 use std::{fs::File, io::Read};
 
-// Unexpected Behavior
 pub struct ChunkReader {
     file: File,
     chunk: Vec<u8>,
@@ -8,7 +7,7 @@ pub struct ChunkReader {
 impl ChunkReader {
     pub fn from(path: &str, watermark: Option<usize>) -> Self {
         let file = File::open(path).unwrap();
-        let watermark = if let Some(v) = watermark { v } else { 8 }; // 8KB
+        let watermark = watermark.unwrap_or(1024 * 8); // 8KB
 
         ChunkReader {
             file,
@@ -21,26 +20,28 @@ impl Iterator for ChunkReader {
     type Item = Vec<u8>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.file.read(&mut self.chunk) {
+        let n = match self.file.read(&mut self.chunk) {
             Ok(n) => {
                 if n == 0 {
                     return None;
                 }
+                n
             }
             Err(_) => return None,
-        }
+        };
 
-        Some(self.chunk.clone())
+        Some(self.chunk[..n].to_vec())
     }
 }
 
+// Consumes a CSV File at once and receives a on_new_line callback for on new lines
 impl ChunkReader {
-    pub fn run(&mut self) -> Vec<Vec<String>> {
-        let mut result: Vec<Vec<String>> = Vec::new();
-        result.push([].to_vec());
-
+    pub fn run<F>(&mut self, on_new_line: F)
+    where
+        F: Fn(Vec<String>),
+    {
+        let mut result: Vec<String> = Vec::new();
         let mut unprocessed_bytes: Vec<u8> = Vec::new();
-        let mut k = 0;
 
         while let Some(chunk) = self.next() {
             let mut chunk = chunk;
@@ -59,31 +60,27 @@ impl ChunkReader {
                     flag = !flag;
                 }
 
-                if !flag && *b == 0 {
-                    break;
-                }
-
                 if !flag && *b == 44 || *b == 10 {
-                    result[k].push(String::from_utf8(chunk[j..i].to_vec()).unwrap());
+                    result.push(String::from_utf8(chunk[j..i].to_vec()).unwrap());
                     j = i + 1;
                 }
 
                 if !flag && *b == 10 {
-                    result.push([].to_vec());
-                    k += 1;
+                    on_new_line(result.clone());
+                    result.clear();
                 }
 
                 i += 1;
             }
 
             if j > 0 {
-                unprocessed_bytes = [unprocessed_bytes.clone(), chunk[j..i].to_vec()].concat();
+                unprocessed_bytes = [unprocessed_bytes.clone(), chunk[j..].to_vec()].concat();
             } else {
                 unprocessed_bytes = chunk;
             }
         }
 
-        result[k].push(String::from_utf8(unprocessed_bytes.to_vec()).unwrap());
-        result
+        result.push(String::from_utf8(unprocessed_bytes.to_vec()).unwrap());
+        on_new_line(result);
     }
 }
