@@ -14,12 +14,8 @@ impl ChunkReader {
             chunk: vec![0; watermark],
         }
     }
-}
 
-impl Iterator for ChunkReader {
-    type Item = Vec<u8>;
-
-    fn next(&mut self) -> Option<Self::Item> {
+    fn read_chunk(&mut self) -> Option<Vec<u8>> {
         let n = match self.file.read(&mut self.chunk) {
             Ok(n) => {
                 if n == 0 {
@@ -43,7 +39,7 @@ impl ChunkReader {
         let mut result: Vec<String> = Vec::new();
         let mut unprocessed_bytes: Vec<u8> = Vec::new();
 
-        while let Some(chunk) = self.next() {
+        while let Some(chunk) = self.read_chunk() {
             let mut chunk = chunk;
 
             if unprocessed_bytes.len() > 0 {
