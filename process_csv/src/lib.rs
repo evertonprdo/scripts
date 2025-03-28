@@ -1,90 +1,31 @@
-use std::{
-    fs::File,
-    io::{BufRead, BufReader},
-};
-
+pub mod buf_reader;
 pub mod chunk_reader;
 
-pub struct CsvReader {
-    buffer: BufReader<File>,
+use std::env;
+
+pub use buf_reader::CsvReader;
+pub use chunk_reader::ChunkReader;
+
+pub struct Config {
+    file_path: String,
+    watermark: Option<usize>,
 }
-impl CsvReader {
-    pub fn from(path: &str) -> Self {
-        let f = File::open(path).unwrap();
-        CsvReader {
-            buffer: BufReader::new(f),
-        }
-    }
+impl Config {
+    pub fn build_from(mut args: impl Iterator<Item = String>) -> Result<Config, &'static str> {
+        args.next();
 
-    fn read_line(&mut self) -> Option<String> {
-        let mut line: String = String::new();
-        match self.buffer.read_line(&mut line) {
-            Ok(n) => {
-                if n == 0 {
-                    return None;
-                }
-            }
-            Err(_) => panic!(),
-        }
-        Some(line)
-    }
+        let file_path = args.next().ok_or("Didn't get a file name")?;
+        let watermark = env::var("WATERMARK")
+            .ok()
+            .map(|val| {
+                val.parse::<usize>()
+                    .map_err(|_| "Failed to parse 'WATERMARK'")
+            })
+            .transpose()?;
 
-    fn parse_line(line: &str) -> Vec<String> {
-        let mut iter = line.as_bytes().iter();
-        let mut cell: Vec<String> = Vec::new();
-
-        let mut skip = false;
-        let mut i = 0;
-        let mut j = 0;
-
-        while let Some(b) = iter.next() {
-            if *b == 34 {
-                skip = !skip;
-            }
-
-            if !skip && *b == 44 {
-                cell.push(line[j..i].to_string());
-                j = i + 1;
-            }
-
-            i += 1;
-        }
-
-        if let Some(10) = line.as_bytes().iter().next_back() {
-            i -= 1;
-        }
-
-        cell.push(line[j..i].to_string());
-        cell
-    }
-}
-impl Iterator for CsvReader {
-    type Item = Vec<String>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        Some(Self::parse_line(&self.read_line()?))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn process_line() {
-        let line = "Sample,Header,Example";
-        assert_eq!(
-            vec!["Sample", "Header", "Example"],
-            CsvReader::parse_line(line)
-        );
-    }
-
-    #[test]
-    fn process_line_doublequote() {
-        let line = "Sample,\"He\"\"@add\"\"ader\",Example\n";
-        assert_eq!(
-            vec!["Sample", "\"He\"\"@add\"\"ader\"", "Example"],
-            CsvReader::parse_line(line)
-        );
+        Ok(Config {
+            file_path,
+            watermark,
+        })
     }
 }

@@ -1,18 +1,24 @@
 use std::{fs::File, io::Read};
 
+use crate::Config;
+
 pub struct ChunkReader {
     file: File,
     chunk: Vec<u8>,
 }
 impl ChunkReader {
-    pub fn from(path: &str, watermark: Option<usize>) -> Self {
-        let file = File::open(path).unwrap();
-        let watermark = watermark.unwrap_or(1024 * 8); // 8KB
+    pub fn build_from(config: Config) -> Result<Self, &'static str> {
+        let file = match File::open(config.file_path) {
+            Ok(file) => file,
+            Err(_) => return Err("Failed to open file"),
+        };
 
-        ChunkReader {
+        let watermark = config.watermark.unwrap_or(1024 * 8); // 8KB
+
+        Ok(ChunkReader {
             file,
             chunk: vec![0; watermark],
-        }
+        })
     }
 
     fn read_chunk(&mut self) -> Option<Vec<u8>> {
