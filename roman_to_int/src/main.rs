@@ -1,35 +1,14 @@
-use std::collections::HashMap;
+use std::{env, process};
+
+use roman_to_int::RomanNumeral;
 
 fn main() {
-    let s = "MCMXCIV";
-    println!("{s}: {}", roman_to_int(s));
-}
+    let args = env::args();
 
-fn roman_to_int(s: &str) -> i32 {
-    let roman_map = HashMap::from([
-        ('I', 1),
-        ('V', 5),
-        ('X', 10),
-        ('L', 50),
-        ('C', 100),
-        ('D', 500),
-        ('M', 1000),
-    ]);
+    let roman = RomanNumeral::build_from(args).unwrap_or_else(|err| {
+        eprintln!("Problem parsing arguments: {err}");
+        process::exit(1);
+    });
 
-    let mut prev = 0;
-    let mut result = 0;
-
-    for c in s.chars().rev() {
-        let val = roman_map[&c];
-
-        if val < prev {
-            result -= val;
-        } else {
-            result += val;
-        }
-
-        prev = val;
-    }
-
-    return result;
+    println!("{}", roman.to_integer());
 }
