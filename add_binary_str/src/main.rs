@@ -1,47 +1,28 @@
-fn main() {
-    let a = "1010";
-    let b = "1011";
+use std::{env, process};
 
-    println!("{a} + {b} = {}", add_binary(&a, &b));
+use add_binary_str::Binary;
+
+fn main() {
+    let (a, b) = parse_args(env::args()).unwrap_or_else(|err| {
+        eprintln!("Problem parsing arguments: {err}");
+        process::exit(1);
+    });
+
+    println!("{} + {} = {}", a, b, Binary::add(&a, &b));
 }
 
-const ZERO: u8 = 48;
-const ONE: u8 = 49;
+fn parse_args(mut args: impl Iterator<Item = String>) -> Result<(Binary, Binary), &'static str> {
+    args.next();
 
-#[rustfmt::skip]
-pub fn add_binary(a: &str, b: &str) -> String {
-    let mut iter_a = a.bytes();
-    let mut iter_b = b.bytes();
+    let a = match args.next() {
+        Some(arg) => Binary::build(arg)?,
+        None => return Err("Dint't get an 'a' value"),
+    };
 
-    let mut sum: Vec<u8> = 
-        vec![0; if a.len() > b.len() { a.len() } else { b.len() } + 1];
-    
-    let mut carry = false;
-    let mut i: usize = sum.len() - 1;
+    let b = match args.next() {
+        Some(arg) => Binary::build(arg)?,
+        None => return Err("Dint't get a 'b' value"),
+    };
 
-    loop {
-        let bit_a = iter_a.next_back();
-        let bit_b = iter_b.next_back();
-
-        if bit_a == None && bit_b == None { break; }
-
-        let bit_a = if let Some(v) = bit_a { v } else { ZERO };
-        let bit_b = if let Some(v) = bit_b { v } else { ZERO };
-
-        sum[i] = match (carry, bit_a == bit_b) {
-            (true, true) => { if bit_a == ZERO { carry = false }; ONE }
-            (false, true) => { if bit_a == ONE { carry = true }; ZERO }
-
-            (true, false) => ZERO,
-            (false, false) => ONE,
-        };
-
-        i -= 1;
-    }
-
-    if carry {
-        sum[i] = ONE;
-        return String::from_utf8(sum).unwrap();
-    }
-    String::from_utf8(sum[1..sum.len()].to_vec()).unwrap()
+    Ok((a, b))
 }
