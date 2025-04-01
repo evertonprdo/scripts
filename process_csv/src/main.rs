@@ -13,5 +13,8 @@ fn main() {
         process::exit(1);
     });
 
-    process_csv.run(|x| println!("{:?}", x));
+    if let Err(e) = process_csv.run(|x| println!("{:?}", x)) {
+        eprintln!("Application error: {e}");
+        process::exit(1);
+    };
 }
