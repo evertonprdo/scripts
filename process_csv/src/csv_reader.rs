@@ -23,7 +23,7 @@ impl CsvReader {
     }
 }
 
-type LineBite = Vec<Vec<u8>>;
+type ByteLine = Vec<Vec<u8>>;
 enum BoundaryEvent<'a> {
     NewCell(&'a [u8]),
     NewLine,
@@ -92,9 +92,9 @@ impl CsvReader {
 
     pub fn for_each_raw_line<F>(&mut self, on_new_line: F) -> Result<(), &'static str>
     where
-        F: Fn(LineBite),
+        F: Fn(ByteLine),
     {
-        let mut line_holder: LineBite = Vec::new();
+        let mut line_holder: ByteLine = Vec::new();
         let mut unp_bytes: Vec<u8> = Vec::new(); // unprocessed_bytes
 
         while let Some(mut chunk) = self.read_chunk()? {
