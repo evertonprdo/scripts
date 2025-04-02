@@ -1,10 +1,8 @@
-pub mod buf_reader;
-pub mod chunk_reader;
+pub mod csv_reader;
 
 use std::env;
 
-pub use buf_reader::CsvReader;
-pub use chunk_reader::ChunkReader;
+pub use csv_reader::CsvReader;
 
 pub struct Config {
     file_path: String,
