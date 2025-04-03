@@ -1,8 +1,10 @@
-pub mod csv_reader;
+pub mod helper;
+pub mod reader;
 
 use std::env;
 
-pub use csv_reader::CsvReader;
+pub use reader::CsvReader;
+pub use reader::YieldEvent;
 
 pub struct Config {
     file_path: String,

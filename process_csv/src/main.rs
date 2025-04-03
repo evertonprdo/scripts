@@ -1,6 +1,6 @@
 use std::{env, process};
 
-use process_csv::{Config, CsvReader};
+use process_csv::{Config, CsvReader, YieldEvent, helper};
 
 fn main() {
     let config = Config::build_from(env::args()).unwrap_or_else(|err| {
@@ -13,13 +13,13 @@ fn main() {
         process::exit(1);
     });
 
-    if let Err(e) = process_csv.for_each_raw_line(|x| {
-        for c in x {
-            print!("{:?},", String::from_utf8(c).unwrap())
-        }
-        println!()
+    if let Err(e) = process_csv.process_file(|x| match x {
+        YieldEvent::NewCell(cell) => print!("{:?}", helper::cell_to_string(cell).unwrap()),
+        YieldEvent::NewLine => println!(),
     }) {
         eprintln!("Application error: {e}");
         process::exit(1);
     };
+
+    println!()
 }
