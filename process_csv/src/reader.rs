@@ -1,5 +1,9 @@
-/// `CsvReader` is designed to split CSV input into cells and lines.
-/// It uses commas (`,`) to separate values and line feeds (`\n`) to detect the end of a line.
+/// `CsvReader` looks more like a byte splitter. It takes a file path and a
+/// watermark indicating the size of the chunk that is read each time.
+///
+/// In order to return a byte cell whenever one is found, the `process_file` function takes
+/// a callback with a `YieldEvent` enum parameter indicating which boundary was triggered,
+/// `NewCell` (i.e., Comma (`,`)) or `NewLine` (i.e., Line Feed(`\n`)).
 ///
 /// Quoted cells are handled correctly, allowing boundaries (such as commas or line feeds)
 /// to be included as part of the cell content without splitting the cell. The quotes remain in the cell.
