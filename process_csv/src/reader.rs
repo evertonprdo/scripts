@@ -1,6 +1,6 @@
 use std::{error::Error, fs::File, io::Read, mem};
 
-use crate::Config;
+use crate::{COMMA, Config, LF, QUOTES};
 
 pub struct CsvReader {
     file: File,
@@ -28,10 +28,6 @@ pub enum YieldEvent {
 
 // Consumes a CSV file at once and receives an on_new_line callback for new lines.
 impl CsvReader {
-    const LF: u8 = 10;
-    const COMMA: u8 = 44;
-    const QUOTES: u8 = 34;
-
     pub fn process_file<F>(&mut self, on_yield: F) -> Result<(), Box<dyn Error>>
     where
         F: Fn(YieldEvent),
@@ -72,18 +68,18 @@ impl CsvReader {
         let mut j = 0;
 
         for (i, byte) in chunk.iter().enumerate() {
-            if *byte == Self::QUOTES {
+            if *byte == QUOTES {
                 between_quotes = !between_quotes;
             }
             if between_quotes {
                 continue;
             }
 
-            if *byte == Self::COMMA || *byte == Self::LF {
+            if *byte == COMMA || *byte == LF {
                 on_boundary(BoundaryEvent::NewCell(&chunk[j..i]));
                 j = i + 1;
             }
-            if *byte == Self::LF {
+            if *byte == LF {
                 on_boundary(BoundaryEvent::NewLine);
             }
         }

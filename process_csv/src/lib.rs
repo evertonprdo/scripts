@@ -3,8 +3,13 @@ pub mod reader;
 
 use std::env;
 
+pub use helper::CellParser;
 pub use reader::CsvReader;
 pub use reader::YieldEvent;
+
+const LF: u8 = 10;
+const COMMA: u8 = 44;
+const QUOTES: u8 = 34;
 
 pub struct Config {
     file_path: String,
