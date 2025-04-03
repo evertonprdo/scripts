@@ -1,3 +1,5 @@
+/// CsvReader provides functionality for reading and processing CSV files efficiently.
+/// It reads data in chunks, processes cells and lines, and triggers user-defined callbacks.
 use std::{error::Error, fs::File, io::Read, mem};
 
 use crate::{COMMA, Config, LF, QUOTES};
@@ -21,13 +23,20 @@ enum BoundaryEvent<'a> {
     NewCell(&'a [u8]),
     NewLine,
 }
+/// Enum representing yielded events when processing the CSV file.
 pub enum YieldEvent {
     NewCell(ByteCell),
     NewLine,
 }
 
-// Consumes a CSV file at once and receives an on_new_line callback for new lines.
 impl CsvReader {
+    /// Processes the CSV file in chunks and triggers a callback `on_yield` for each cell or line encountered.
+    ///
+    /// # Parameters
+    /// - `on_yield: F`: A function that handles `YieldEvent` occurrences.
+    ///
+    /// # Returns
+    /// - `Result<(), Box<dyn Error>>`
     pub fn process_file<F>(&mut self, on_yield: F) -> Result<(), Box<dyn Error>>
     where
         F: Fn(YieldEvent),
@@ -60,6 +69,14 @@ impl CsvReader {
         return Ok(());
     }
 
+    /// Splits a chunk of CSV data into individual cells and lines.
+    ///
+    /// # Parameters
+    /// - `chunk: &'a mut [u8]`: The mutable byte slice containing CSV data.
+    /// - `on_boundary: F`: A function handling boundary events.
+    ///
+    /// # Returns
+    /// - The remaining unprocessed portion of the chunk.
     fn split_chunk<'a, F>(chunk: &'a mut [u8], mut on_boundary: F) -> &'a [u8]
     where
         F: FnMut(BoundaryEvent<'a>),

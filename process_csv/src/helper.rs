@@ -4,6 +4,13 @@ use crate::QUOTES;
 
 pub struct CellParser {}
 impl CellParser {
+    /// Converts a byte vector into a UTF-8 string, handling quoted cells.
+    ///
+    /// # Parameters
+    /// - `cell: Vec<u8>` - The byte vector representing the CSV cell.
+    ///
+    /// # Returns
+    /// - `Result<String, Box<dyn Error>>` - The parsed string or an error if UTF-8 conversion fails.
     pub fn to_string(mut cell: Vec<u8>) -> Result<String, Box<dyn Error>> {
         if cell.get(0) == Some(&QUOTES) {
             Self::normalize(&mut cell);
@@ -12,6 +19,11 @@ impl CellParser {
         String::from_utf8(cell).map_err(|e| e.into())
     }
 
+    /// Normalizes a quoted CSV cell by handling escaped quotes removing enclosing quotes
+    /// and replacing double double-quotes ("") with a single quote (")
+    ///
+    /// # Parameters
+    /// - `cell: &mut Vec<u8>` - The mutable byte vector to normalize.
     fn normalize(cell: &mut Vec<u8>) {
         let mut write = 0;
         let mut read = 1;

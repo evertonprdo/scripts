@@ -1,3 +1,4 @@
+use std::time::Instant;
 use std::{env, process};
 
 use process_csv::{CellParser, Config, CsvReader, YieldEvent};
@@ -13,6 +14,8 @@ fn main() {
         process::exit(1);
     });
 
+    let start = Instant::now();
+
     if let Err(e) = process_csv.process_file(|x| match x {
         YieldEvent::NewCell(cell) => print!("{} | ", CellParser::to_string(cell).unwrap()),
         YieldEvent::NewLine => println!(),
@@ -21,5 +24,6 @@ fn main() {
         process::exit(1);
     };
 
-    println!()
+    let duration = start.elapsed();
+    println!("Time elapsed: {:?}", duration);
 }
