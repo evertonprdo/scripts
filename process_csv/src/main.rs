@@ -10,7 +10,7 @@ fn main() {
         process::exit(1);
     });
 
-    let mut process_csv = CsvReader::build_from(config).unwrap_or_else(|err| {
+    let process_csv = CsvReader::build_from(config).unwrap_or_else(|err| {
         eprintln!("Problem to open file: {err}");
         process::exit(1);
     });
@@ -28,9 +28,9 @@ fn main() {
     for received in rx {
         match received {
             YieldEvent::NewCell(cell) => {
-                print!(" {} |", CellParser::to_string(cell).unwrap());
+                CellParser::to_string(cell).unwrap();
             }
-            YieldEvent::NewLine => print!("\n"),
+            YieldEvent::NewLine => {}
         }
     }
 

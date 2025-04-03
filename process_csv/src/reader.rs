@@ -49,7 +49,7 @@ impl CsvReader {
     ///
     /// # Returns
     /// - `Result<(), Box<dyn Error>>`
-    pub fn process_file<F>(&mut self, on_yield: F) -> Result<(), Box<dyn Error>>
+    pub fn process_file<F>(mut self, on_yield: F) -> Result<(), Box<dyn Error>>
     where
         F: Fn(YieldEvent),
     {
