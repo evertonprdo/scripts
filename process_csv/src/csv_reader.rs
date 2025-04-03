@@ -1,29 +1,22 @@
-use core::str;
-use std::{fs::File, io::Read, mem};
+use std::{error::Error, fs::File, io::Read, mem};
 
 use crate::Config;
 
 pub struct CsvReader {
     file: File,
-    chunk: Vec<u8>,
+    watermark: usize,
 }
 impl CsvReader {
-    pub fn build_from(config: Config) -> Result<Self, &'static str> {
-        let file = match File::open(config.file_path) {
-            Ok(file) => file,
-            Err(_) => return Err("Failed to open file"),
-        };
+    pub fn build_from(config: Config) -> Result<Self, Box<dyn Error>> {
+        let file = File::open(config.file_path)?;
 
         let watermark = config.watermark.unwrap_or(1024 * 8); // 8KB
 
-        Ok(CsvReader {
-            file,
-            chunk: vec![0; watermark],
-        })
+        Ok(CsvReader { file, watermark })
     }
 }
 
-type ByteLine = Vec<Vec<u8>>;
+type ByteCell = Vec<u8>;
 enum BoundaryEvent<'a> {
     NewCell(&'a [u8]),
     NewLine,
@@ -35,75 +28,68 @@ impl CsvReader {
     const COMMA: u8 = 44;
     const QUOTES: u8 = 34;
 
-    fn parse_cell(line: &[u8]) -> Result<String, &'static str> {
-        match str::from_utf8(line) {
-            Ok(s) => Ok(s.to_string()),
-            Err(_) => Err("failed when parsing cell"),
-        }
+    fn parse_cell(line: &[u8]) -> Result<String, Box<dyn Error>> {
+        String::from_utf8(line.to_vec()).map_err(|e| e.into())
     }
+    /*
+        pub fn for_each_line<F>(&mut self, on_new_line: F) -> Result<(), Box<dyn Error>>
+        where
+            F: Fn(Vec<String>),
+        {
+            let mut line_holder: Vec<String> = Vec::new();
+            let mut unp_bytes: Vec<u8> = Vec::new(); // unprocessed_bytes
 
-    fn read_chunk(&mut self) -> Result<Option<Vec<u8>>, &'static str> {
-        let n = self
-            .file
-            .read(&mut self.chunk)
-            .map_err(|_| "Failed when reading file")?;
+            while let Some(mut chunk) = self.read_chunk()? {
+                if !unp_bytes.is_empty() {
+                    unp_bytes.append(&mut chunk);
+                    chunk = mem::take(&mut unp_bytes);
+                }
 
-        if n == 0 {
-            return Ok(None);
+                let remaining = Self::split_to_string(&mut chunk, |bond| match bond {
+                    BoundaryEvent::NewCell(c) => {
+                        line_holder.push(Self::parse_cell(c)?);
+                        Ok(())
+                    }
+
+                    BoundaryEvent::NewLine => {
+                        let capacity = line_holder.capacity();
+                        on_new_line(mem::replace(&mut line_holder, Vec::with_capacity(capacity)));
+                        Ok(())
+                    }
+                })?;
+
+                unp_bytes = Vec::from(remaining);
+            }
+
+            line_holder.push(Self::parse_cell(&unp_bytes)?);
+            on_new_line(mem::take(&mut line_holder));
+
+            return Ok(());
         }
+    */
 
-        Ok(Some(self.chunk[..n].to_vec()))
-    }
-
-    pub fn for_each_line<F>(&mut self, on_new_line: F) -> Result<(), &'static str>
+    pub fn for_each_raw_line<F>(&mut self, on_new_line: F) -> Result<(), Box<dyn Error>>
     where
-        F: Fn(Vec<String>),
+        F: Fn(Vec<ByteCell>),
     {
-        let mut line_holder: Vec<String> = Vec::new();
+        let mut chunk = vec![0; self.watermark];
         let mut unp_bytes: Vec<u8> = Vec::new(); // unprocessed_bytes
+        let mut line_holder: Vec<ByteCell> = Vec::new();
 
-        while let Some(mut chunk) = self.read_chunk()? {
+        loop {
+            let n = self.file.read(&mut chunk)?;
+            if n == 0 {
+                break;
+            }
+
+            chunk.truncate(n);
+
             if !unp_bytes.is_empty() {
                 unp_bytes.append(&mut chunk);
                 chunk = mem::take(&mut unp_bytes);
             }
 
-            let remaining = Self::split_to_string(&mut chunk, |bond| match bond {
-                BoundaryEvent::NewCell(c) => {
-                    line_holder.push(Self::parse_cell(c)?);
-                    Ok(())
-                }
-
-                BoundaryEvent::NewLine => {
-                    let capacity = line_holder.capacity();
-                    on_new_line(mem::replace(&mut line_holder, Vec::with_capacity(capacity)));
-                    Ok(())
-                }
-            })?;
-
-            unp_bytes = Vec::from(remaining);
-        }
-
-        line_holder.push(Self::parse_cell(&unp_bytes)?);
-        on_new_line(mem::take(&mut line_holder));
-
-        return Ok(());
-    }
-
-    pub fn for_each_raw_line<F>(&mut self, on_new_line: F) -> Result<(), &'static str>
-    where
-        F: Fn(ByteLine),
-    {
-        let mut line_holder: ByteLine = Vec::new();
-        let mut unp_bytes: Vec<u8> = Vec::new(); // unprocessed_bytes
-
-        while let Some(mut chunk) = self.read_chunk()? {
-            if !unp_bytes.is_empty() {
-                unp_bytes.append(&mut chunk);
-                chunk = mem::take(&mut unp_bytes);
-            }
-
-            let remaining = Self::split_chunk(&mut chunk, |bond| match bond {
+            let remaining = Self::split_chunk(&mut chunk, |boundary| match boundary {
                 BoundaryEvent::NewCell(c) => line_holder.push(c.to_vec()),
 
                 BoundaryEvent::NewLine => {
@@ -124,11 +110,11 @@ impl CsvReader {
     fn split_to_string<'a, F>(
         chunk: &'a mut [u8],
         mut on_boundary: F,
-    ) -> Result<&'a [u8], &'static str>
+    ) -> Result<&'a [u8], Box<dyn Error>>
     where
-        F: FnMut(BoundaryEvent<'a>) -> Result<(), &'static str>,
+        F: FnMut(BoundaryEvent<'a>) -> Result<(), Box<dyn Error>>,
     {
-        let mut cb_result: Result<(), &'static str> = Ok(());
+        let mut cb_result: Result<(), Box<dyn Error>> = Ok(());
         let remaining = Self::split_chunk(chunk, |boundary| cb_result = on_boundary(boundary));
 
         cb_result.map(|_| remaining)
