@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use crate::QUOTES;
+use crate::{CR, QUOTES};
 
 pub struct CellParser {}
 impl CellParser {
@@ -14,6 +14,11 @@ impl CellParser {
     pub fn to_string(mut cell: Vec<u8>) -> Result<String, Box<dyn Error>> {
         if cell.get(0) == Some(&QUOTES) {
             Self::normalize(&mut cell);
+        }
+
+        // Remove trailing carriage return (`\r`) from CRLF-terminated cells
+        if cell.last() == Some(&CR) {
+            cell.pop();
         }
 
         String::from_utf8(cell).map_err(|e| e.into())

@@ -17,7 +17,7 @@ fn main() {
     let start = Instant::now();
 
     if let Err(e) = process_csv.process_file(|x| match x {
-        YieldEvent::NewCell(cell) => print!("{} | ", CellParser::to_string(cell).unwrap()),
+        YieldEvent::NewCell(cell) => print!("{:?} | ", CellParser::to_string(cell).unwrap()),
         YieldEvent::NewLine => println!(),
     }) {
         eprintln!("Application error: {e}");

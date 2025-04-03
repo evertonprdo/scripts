@@ -1,5 +1,13 @@
-/// CsvReader provides functionality for reading and processing CSV files efficiently.
-/// It reads data in chunks, processes cells and lines, and triggers user-defined callbacks.
+/// `CsvReader` is designed to split CSV input into cells and lines.
+/// It uses commas (`,`) to separate values and line feeds (`\n`) to detect the end of a line.
+///
+/// Quoted cells are handled correctly, allowing boundaries (such as commas or line feeds)
+/// to be included as part of the cell content without splitting the cell. The quotes remain in the cell.
+///
+/// Note that carriage returns (`\r`) are not removed by the parser and will remain at the end of each cell.
+/// If you prefer not to have `\r` characters, consider preprocessing or postprocessing the input to remove them.
+///
+/// The reader processes data in chunks and invokes user-defined callbacks for further processing.
 use std::{error::Error, fs::File, io::Read, mem};
 
 use crate::{COMMA, Config, LF, QUOTES};

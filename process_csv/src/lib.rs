@@ -8,6 +8,7 @@ pub use reader::CsvReader;
 pub use reader::YieldEvent;
 
 const LF: u8 = 10;
+const CR: u8 = 13;
 const COMMA: u8 = 44;
 const QUOTES: u8 = 34;
 
