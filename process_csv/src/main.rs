@@ -1,5 +1,6 @@
+use std::sync::mpsc;
 use std::time::Instant;
-use std::{env, process};
+use std::{env, process, thread};
 
 use process_csv::{CellParser, Config, CsvReader, YieldEvent};
 
@@ -15,14 +16,23 @@ fn main() {
     });
 
     let start = Instant::now();
+    let (tx, rx) = mpsc::channel();
 
-    if let Err(e) = process_csv.process_file(|x| match x {
-        YieldEvent::NewCell(cell) => print!("{:?} | ", CellParser::to_string(cell).unwrap()),
-        YieldEvent::NewLine => println!(),
-    }) {
-        eprintln!("Application error: {e}");
-        process::exit(1);
-    };
+    thread::spawn(move || {
+        if let Err(e) = process_csv.process_file(|x| tx.send(x).unwrap()) {
+            eprintln!("Application error: {e}");
+            process::exit(1);
+        };
+    });
+
+    for received in rx {
+        match received {
+            YieldEvent::NewCell(cell) => {
+                print!(" {} |", CellParser::to_string(cell).unwrap());
+            }
+            YieldEvent::NewLine => print!("\n"),
+        }
+    }
 
     let duration = start.elapsed();
     println!("Time elapsed: {:?}", duration);
