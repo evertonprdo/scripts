@@ -33,19 +33,23 @@ fn main() {
         }) {
             eprintln!("Application error: {e}");
             process::exit(1);
+        } else {
+            tx.send(arr).unwrap();
         };
     });
 
     let _ = rx.recv();
 
     for received in rx {
-        let [n, a, m, c]: [Vec<u8>; 4] = received.try_into().expect("Expected 4 elements");
+        let mut cells = received
+            .into_iter()
+            .map(|c| CellParser::to_string(c).unwrap());
 
         let user = User {
-            name: CellParser::to_string(n).unwrap(),
-            age: CellParser::to_int(a).unwrap(),
-            mail: CellParser::to_string(m).unwrap(),
-            country: CellParser::to_string(c).unwrap(),
+            name: cells.next().expect("Missing name"),
+            age: cells.next().expect("Missing age").parse().unwrap(),
+            mail: cells.next().expect("Missing mail"),
+            country: cells.next().expect("Missing country"),
         };
 
         println!(
