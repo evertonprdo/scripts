@@ -1,6 +1,6 @@
 use std::sync::mpsc;
 use std::time::Instant;
-use std::{env, process, thread};
+use std::{env, mem, process, thread};
 
 use process_csv::{CellParser, Config, CsvReader, YieldEvent};
 
@@ -19,21 +19,48 @@ fn main() {
     let (tx, rx) = mpsc::channel();
 
     thread::spawn(move || {
-        if let Err(e) = process_csv.process_file(|x| tx.send(x).unwrap()) {
+        let mut arr = Vec::new();
+
+        if let Err(e) = process_csv.process_file(|event| match event {
+            YieldEvent::NewCell(cell) => {
+                arr.push(cell);
+            }
+            YieldEvent::NewLine => {
+                let cap = arr.len();
+                tx.send(mem::replace(&mut arr, Vec::with_capacity(cap)))
+                    .unwrap();
+            }
+        }) {
             eprintln!("Application error: {e}");
             process::exit(1);
         };
     });
 
+    let _ = rx.recv();
+
     for received in rx {
-        match received {
-            YieldEvent::NewCell(cell) => {
-                CellParser::to_string(cell).unwrap();
-            }
-            YieldEvent::NewLine => {}
-        }
+        let [n, a, m, c]: [Vec<u8>; 4] = received.try_into().expect("Expected 4 elements");
+
+        let user = User {
+            name: CellParser::to_string(n).unwrap(),
+            age: CellParser::to_int(a).unwrap(),
+            mail: CellParser::to_string(m).unwrap(),
+            country: CellParser::to_string(c).unwrap(),
+        };
+
+        println!(
+            "user: {}\nage: {}\nmail: {}\ncountry: {}\n",
+            user.name, user.age, user.mail, user.country
+        );
     }
 
     let duration = start.elapsed();
     println!("Time elapsed: {:?}", duration);
+}
+
+struct User {
+    name: String,
+    age: u8,
+    mail: String,
+    country: String,
 }
