@@ -35,8 +35,6 @@ pub fn biggest_number(digits: Vec<char>) -> u32 {
             i -= 1;
             k -= 1;
 
-            println!("{result} += {} * {}", j - 48, 10_u32.pow(i));
-
             result += (j - 48) * 10_u32.pow(i);
         }
 
