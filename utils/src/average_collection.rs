@@ -1,9 +1,4 @@
-use std::ops::AddAssign;
-
-// Trait alias for numeric-like types (see: https://users.rust-lang.org/t/custom-traits-as-trait-bounds/54224)
-// Groups Copy + AddAssign + Into<f64> under a single trait
-pub trait Number: Copy + AddAssign + Into<f64> {}
-impl<T> Number for T where T: Copy + AddAssign + Into<f64> {}
+use crate::Number;
 
 pub struct AverageCollection<T: Number> {
     values: Vec<T>,
