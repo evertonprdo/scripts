@@ -1,11 +1,11 @@
 use std::io;
 
-use json_db::{Database, Person};
+use json_db::{Database, Insert, Person};
 
 fn main() {
     let mut db = Database::new();
     println!("### Current users on database ###");
-    println!("{:?}", db.get_all());
+    println!("{:?}", db.get_person());
 
     println!("### User Registration ###");
 
@@ -33,7 +33,7 @@ fn main() {
     let height_cm = height_cm.trim().parse::<f32>().expect("Invalid height_cm");
 
     let person = Person::new(name, age, height_cm, vec![]);
-    db.insert(person);
+    db.insert(Insert::Person(person));
 
-    println!("{:?}", db.get_all());
+    println!("{:?}", db.get_person());
 }

@@ -18,7 +18,7 @@ impl Person {
             .as_secs();
 
         Person {
-            id: id,
+            id,
             name,
             age,
             height_cm,

@@ -1,21 +1,37 @@
 use std::{fs::File, io::ErrorKind};
 
+use serde::{Deserialize, Serialize};
+
 use crate::person::Person;
+
+pub enum Insert {
+    Person(Person),
+}
+
+#[derive(Deserialize, Serialize)]
+struct Schema {
+    person: Vec<Person>,
+}
+impl Schema {
+    fn new() -> Self {
+        Schema { person: Vec::new() }
+    }
+}
 
 const DB_PATH: &str = "db.json";
 pub struct Database {
-    db: Vec<Person>,
+    db: Schema,
 }
 impl Database {
     pub fn new() -> Self {
         let db = match File::open(DB_PATH) {
             Ok(f) => match serde_json::from_reader(f) {
                 Ok(data) => data,
-                Err(err) if err.is_eof() => Vec::new(),
+                Err(err) if err.is_eof() => Schema::new(),
                 _ => panic!("Problem reading database"),
             },
 
-            Err(err) if err.kind() == ErrorKind::NotFound => Vec::new(),
+            Err(err) if err.kind() == ErrorKind::NotFound => Schema::new(),
             Err(err) => panic!("Problem opening database: {:?}", err),
         };
 
@@ -29,12 +45,14 @@ impl Database {
         serde_json::to_writer(file, &self.db).expect(ERROR);
     }
 
-    pub fn insert(&mut self, data: Person) {
-        self.db.push(data);
+    pub fn insert(&mut self, data: Insert) {
+        match data {
+            Insert::Person(person) => self.db.person.push(person),
+        }
         self.persist();
     }
 
-    pub fn get_all(&self) -> &Vec<Person> {
-        &self.db
+    pub fn get_person(&self) -> &Vec<Person> {
+        &self.db.person
     }
 }
