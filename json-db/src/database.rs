@@ -2,23 +2,29 @@ use std::{fs::File, io::ErrorKind};
 
 use serde::{Deserialize, Serialize};
 
-use crate::person::Person;
+use crate::{Department, person::Person};
+
+const DB_PATH: &str = "db.json";
 
 pub enum Insert {
     Person(Person),
+    Department(Department),
 }
 
 #[derive(Deserialize, Serialize)]
 struct Schema {
     person: Vec<Person>,
+    department: Vec<Department>,
 }
 impl Schema {
     fn new() -> Self {
-        Schema { person: Vec::new() }
+        Schema {
+            person: Vec::new(),
+            department: Vec::new(),
+        }
     }
 }
 
-const DB_PATH: &str = "db.json";
 pub struct Database {
     db: Schema,
 }
@@ -47,12 +53,16 @@ impl Database {
 
     pub fn insert(&mut self, data: Insert) {
         match data {
-            Insert::Person(person) => self.db.person.push(person),
+            Insert::Person(d) => self.db.person.push(d),
+            Insert::Department(d) => self.db.department.push(d),
         }
         self.persist();
     }
 
     pub fn get_person(&self) -> &Vec<Person> {
         &self.db.person
+    }
+    pub fn get_department(&self) -> &Vec<Department> {
+        &self.db.department
     }
 }

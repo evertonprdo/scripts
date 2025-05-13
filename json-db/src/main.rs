@@ -1,39 +1,66 @@
-use std::io;
-
-use json_db::{Database, Insert, Person};
+use json_db::{Database, Department, Insert, Person, utils};
 
 fn main() {
     let mut db = Database::new();
+
     println!("### Current users on database ###");
-    println!("{:?}", db.get_person());
+    println!("{:#?}", db.get_person());
 
+    println!("### Current departments on database ###");
+    println!("{:#?}", db.get_department());
+
+    loop {
+        println!();
+        println!("Select an option:");
+
+        println!("1. User registration");
+        println!("2. Department registration");
+        println!("3. Retrieve Users");
+        println!("4. Retrieve Departments");
+        println!("0. exit");
+
+        let opt: u8 = utils::stdin_num();
+        match opt {
+            1 => register_user(&mut db),
+            2 => register_department(&mut db),
+            3 => println!("\n{:#?}", db.get_person()),
+            4 => println!("\n{:#?}", db.get_department()),
+            0 => break,
+            _ => println!("Invalid option!"),
+        }
+    }
+}
+
+fn register_user(db: &mut Database) {
     println!("### User Registration ###");
-
     println!("Please type the name:");
-    let mut name = String::new();
-    io::stdin()
-        .read_line(&mut name)
-        .expect("Failed to read line");
-    name.pop();
+    let name = utils::stdin_str();
 
     println!("Please type the age:");
-    let mut age = String::new();
-    io::stdin()
-        .read_line(&mut age)
-        .expect("Failed to read line");
-
-    let age = age.trim().parse::<u8>().expect("Invalid age");
+    let age = utils::stdin_num();
 
     println!("Please type the height_cm:");
-    let mut height_cm = String::new();
-    io::stdin()
-        .read_line(&mut height_cm)
-        .expect("Failed to read line");
-
-    let height_cm = height_cm.trim().parse::<f32>().expect("Invalid height_cm");
+    let height_cm = utils::stdin_num();
 
     let person = Person::new(name, age, height_cm, vec![]);
     db.insert(Insert::Person(person));
 
-    println!("{:?}", db.get_person());
+    println!("User registered successfully");
+}
+
+fn register_department(db: &mut Database) {
+    println!("### Department Registration ###");
+    println!("Please type the name:");
+    let name = utils::stdin_str();
+
+    println!("Please type the employee count:");
+    let employee_count = utils::stdin_num();
+
+    println!("Please type the budget:");
+    let budget = utils::stdin_num();
+
+    let department = Department::new(name, employee_count, budget);
+    db.insert(Insert::Department(department));
+
+    println!("User registered successfully");
 }
